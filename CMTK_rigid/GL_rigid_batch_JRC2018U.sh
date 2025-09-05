@@ -90,7 +90,7 @@ find "$path_to_tifs" -maxdepth 1 -type f -name "*.tif" | while read -r file; do
         # fi
         # register all channels
         if [ ! -f "$path_to_images/$rigid_basename" ]; then
-            cmtk reformatx -v --pad-out 0 --target-grid "1052,900,270:0.38,0.38,1:114,0,0" -o $path_to_images/$rigid_basename --floating $image $path_to_images/rigid.xform
+            cmtk reformatx -v --pad-out 0 --target-grid "1052,800,270:0.38,0.38,1:114,-20,0" -o $path_to_images/$rigid_basename --floating $image $path_to_images/rigid.xform
             #cmtk reformatx -v --pad-out 0 -o $path_to_images/$rigid_basename --floating $image $path_to_template $path_to_images/rigid.xform
             if [ $? -ne 0 ]; then
                 echo "Error: Reformatx failed for $imageBaseName"
@@ -105,6 +105,7 @@ find "$path_to_tifs" -maxdepth 1 -type f -name "*.tif" | while read -r file; do
 
     #aggregate the registered images
     rigid_image_list=$(find "$path_to_images" -maxdepth 1 -name "rigid_*.nrrd")
+    rigid_image_list=$(echo "$rigid_image_list" | tr ' ' '\n' | sort | tr '\n' ' ')
     echo $rigid_image_list
     fiji --headless --console -macro "$path_to_macro/mergeChannel.ijm" "$rigid_image_list"
     mv "rigid_$imageBaseName.tif" "$output_folder/rigid_$imageBaseName.tif"

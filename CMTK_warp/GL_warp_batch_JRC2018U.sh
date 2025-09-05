@@ -107,6 +107,7 @@ find "$path_to_tifs" -maxdepth 1 -type f -name "*.tif" | while read -r file; do
 
     #aggregate the registered images
     warp_image_list=$(find "$path_to_images" -maxdepth 1 -name "warp_*.nrrd")
+    warp_image_list=$(echo "$warp_image_list" | tr ' ' '\n' | sort | tr '\n' ' ')
     echo $warp_image_list
     fiji --headless --console -macro "$path_to_macro/mergeChannel.ijm" "$warp_image_list"
     mv "warp_$imageBaseName.tif" "$output_folder/warp_$imageBaseName.tif"
