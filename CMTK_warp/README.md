@@ -1,7 +1,13 @@
 # CMTK Image Registration - Usage Guide
-- [ ] Update the documentation
 
 Register TIF images to JRC2018 template using CMTK.
+
+>[!TIP]
+>To correctly register TIF images, they need to meet the following requirements:
+>1. They must contain at least a complete central brain.
+>2. he images should be taken from anterior to posterior.
+>3. The brain should be oriented within ±80º
+>4. The images must have at least one neuropile channel, such as brp or synapsin.
 
 ## Usage
 
