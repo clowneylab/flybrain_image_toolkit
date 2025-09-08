@@ -3,6 +3,9 @@
 *.tif
 *.tiff
 
+# Ignore downloaded vfb data
+vfb_images/
+
 # Ignore macOS system files
 .DS_Store
 

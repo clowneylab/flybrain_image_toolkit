@@ -10,4 +10,6 @@ A collection of tools to process Drosophila brain images. Each folder below cont
 
 - [CMTK_warp](CMTK_warp/README.md): Batch processing scripts for non-rigid (warp) registration of images using CMTK, also targeting the JRC2018U template.
 
+- [VFB](VFB/download_nrrd.ipynb): Download registered nrrd images from virtual fly brain.
+
 Refer to each tool's README for usage instructions and details.
