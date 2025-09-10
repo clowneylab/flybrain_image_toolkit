@@ -1,7 +1,7 @@
 #!/bin/bash
                                        ## REQUIRED: #!/bin/bash must be on the 1st line
                                        ## and it must be the only string on the line
-#SBATCH --job-name=CMTK-rigid       ## Name of the job for the scheduler
+#SBATCH --job-name=CMTK-Jacobian      ## Name of the job for the scheduler
 #SBATCH --account=jclowney0            ## Your PI's uniqname plus 0,99, or other number
 #SBATCH --partition=standard                ## name of the queue to submit the job to.
                                        ## Choose: standard, largemem, gpu, spgpu, debug
@@ -10,9 +10,9 @@
 #SBATCH --nodes=1                      ## number of nodes you are requesting
 #SBATCH --ntasks=1                     ## how many task spaces do you want to reserve
 #SBATCH --cpus-per-task=32              ## how many cores do you want to use per task
-#SBATCH --time=00:30:00                ## Maximum length of time you are reserving the 
+#SBATCH --time=10:00:00                ## Maximum length of time you are reserving the 
                                        ## resources for (bill is based on time used)
-#SBATCH --mem=48g                      ## Memory requested per core
+#SBATCH --mem=24g                      ## Memory requested per core
 #SBATCH --mail-user=yijiep@umich.edu   ## send email notifications to umich email listed
 #SBATCH --mail-type=END                ## when to send email (standard values are:
                                        ## NONE,BEGIN,END,FAIL,REQUEUE,ALL.
@@ -20,15 +20,19 @@
 #SBATCH --output=./logs/%x-%j.txt               ## send output and error info to the file listed
                                        ##(optional: different name format than default) 
 
+
 # Load the necessary modules
 module load cmtk/3.3.1
 module load fiji
 
-path_to_tifs=$1 #'./Yijie/KC_manipulation' #the folder for tif images need to be registered 
-path_to_template='./templates/JRC2018_UNISEX_38um_iso_16bit.nrrd' # template
-path_to_macro='./macro' #path to macro folder
-output_folder=$2 #'./Yijie/output' # output folder, will create one if needed
+# Input arguments
+path_to_tifs=$1 # folder for tif images to be registered
+output_folder=$2 # output folder, will create one if needed
 reference_channel=$3 # reference channel for registration
+
+# Fixed template and macro folder (edit if needed)
+path_to_template='./templates/JRC2018_UNISEX_38um_iso_16bit.nrrd'
+path_to_macro='./macro'
 
 mkdir -p $output_folder
 
@@ -61,57 +65,49 @@ find "$path_to_tifs" -maxdepth 1 -type f -name "*.tif" | while read -r file; do
     if [ ! -f "$path_to_images/initial.xform" ]; then
         echo "Creating initial xform for $imageBaseName"
         cmtk make_initial_affine --principal-axes $path_to_template $path_to_images/$reference_image $path_to_images/initial.xform
-        # cmtk make_initial_affine $path_to_template $path_to_images/$reference_image $path_to_images/initial.xform
-        # cmtk make_initial_affine --centers-of-mass $path_to_template $path_to_images/$reference_image $path_to_images/initial.xform
         if [ $? -ne 0 ]; then
             echo "Error: Initial affine transformation failed for $imageBaseName"
             exit 1
         fi
     fi
 
-    if [ ! -d "$path_to_images/rigid.xform" ]; then
-        echo "Rigid registration is in progress for $image_name"
-        # cmtk registration --initial $path_to_images/initial.xform --nmi --dofs 6,6,6,6 --exploration 16 --accuracy 0.8 -o $path_to_images/rigid.xform $path_to_template $path_to_images/$reference_image
-        cmtk registration --initial $path_to_images/initial.xform --auto-multi-levels 3 -s 0.5 --nmi --exploration 16 --accuracy 0.4 -o $path_to_images/rigid.xform $path_to_template $path_to_images/$reference_image
-        # add --dofs 12 to make it as affine
+    if [ ! -d "$path_to_images/affine.xform" ]; then
+        echo "Affine registration is in progress for $image_name"
+        cmtk registration --initial $path_to_images/initial.xform --nmi --dofs 6 --dofs 12 --nmi --exploration 16 --accuracy 0.8 --omit-original-data -o $path_to_images/affine.xform $path_to_template $path_to_images/$reference_image
         if [ $? -ne 0 ]; then
-            echo "Error: Rigid registration failed for $imageBaseName"
+            echo "Error: Affine registration failed for $imageBaseName"
             exit 1
         fi
     fi
 
-    for image in $nrrd_list; do
-        channel_basename=$(basename "$image")
-        # # example channel_basename:YP-24-045_Male4_ch1.nrrd
-        # channel_number=$(echo $channel_basename | grep -oP 'ch\d+' | grep -oP '\d+')
-        rigid_basename="rigid_$channel_basename"
-        # # only reformating the channels specified in reformat_channels
-        # if [[ ! " ${reformat_channels[@]} " =~ " ${channel_number} " ]]; then
-        #     continue
-        # fi
-        # register all channels
-        if [ ! -f "$path_to_images/$rigid_basename" ]; then
-            cmtk reformatx -v --pad-out 0 --target-grid "1052,800,270:0.38,0.38,1:114,-20,0" -o $path_to_images/$rigid_basename --floating $image $path_to_images/rigid.xform
-            #cmtk reformatx -v --pad-out 0 -o $path_to_images/$rigid_basename --floating $image $path_to_template $path_to_images/rigid.xform
-            if [ $? -ne 0 ]; then
-                echo "Error: Reformatx failed for $imageBaseName"
-                exit 1
-            fi
+    if [ ! -d "$path_to_images/warp.xform" ]; then
+        echo "Warp registration is in progress for $image_name"
+        cmtk warp --nmi --jacobian-weight 0 --fast -e 26 --grid-spacing 80 --energy-weight 1e-1 --refine 4 --coarsest 8 --ic-weight 0 --output-intermediate --accuracy 0.4 --omit-original-data -o $path_to_images/warp.xform $path_to_template $path_to_images/$reference_image $path_to_images/affine.xform
+        if [ $? -ne 0 ]; then
+            echo "Error: Warp registration failed for $imageBaseName"
+            exit 1
         fi
-        echo "Reformat is done for $rigid_basename"
-    done
+    fi
 
-    # ----------------Aggregate the registered images----------------
-    echo "----------------Aggregating $file----------------"
+    # reformat reference channel
+    warped_basename=warp_${imageBaseName}_ch${reference_channel}.nrrd
+    if [ ! -f "$path_to_images/$warped_basename" ]; then
+        cmtk reformatx -v --pad-out 0 -o $path_to_images/$warped_basename --target-grid "1210,566,174:0.52,0.52,1:0,0,0" --floating $path_to_images/$reference_image $path_to_images/warp.xform
+        if [ $? -ne 0 ]; then
+            echo "Error: Reformat failed for $imageBaseName"
+            exit 1
+        fi
+    fi
 
-    #aggregate the registered images
-    rigid_image_list=$(find "$path_to_images" -maxdepth 1 -name "rigid_*.nrrd")
-    rigid_image_list=$(echo "$rigid_image_list" | tr ' ' '\n' | sort | tr '\n' ' ')
-    echo $rigid_image_list
-    fiji --headless --console -macro "$path_to_macro/mergeChannel.ijm" "$rigid_image_list"
-    mv "rigid_$imageBaseName.tif" "$output_folder/rigid_$imageBaseName.tif"
-    #rm -r "$temp_folder"
-    # let's keep everything for now
-    echo "----------------$file is done----------------"
-
+    # reformat jacobian
+    jacobian_basename=jacobian_${imageBaseName}.nrrd
+    if [ ! -f "$path_to_images/$jacobian_basename" ]; then
+        cmtk reformatx -v -o $path_to_images/$jacobian_basename $path_to_images/$warped_basename --jacobian --inverse $path_to_images/warp.xform
+        if [ $? -ne 0 ]; then
+            echo "Error: Jacobian reformat failed for $imageBaseName"
+            exit 1
+        fi
+    fi
+    echo "Jacobian reformat is done for $jacobian_basename"
 done
+echo "----------------$file is done----------------"
