@@ -92,7 +92,7 @@ find "$path_to_tifs" -maxdepth 1 -type f -name "*.tif" | while read -r file; do
     # reformat reference channel
     warped_basename=warp_${imageBaseName}_ch${reference_channel}.nrrd
     if [ ! -f "$path_to_images/$warped_basename" ]; then
-        cmtk reformatx -v --pad-out 0 -o $path_to_images/$warped_basename --target-grid "1210,566,174:0.52,0.52,1:0,0,0" --floating $path_to_images/$reference_image $path_to_images/warp.xform
+        cmtk reformatx -v --pad-out 0 -o $path_to_images/$warped_basename --target-grid "1210,566,174:0.5186,0.5186,1:0,0,0" --floating $path_to_images/$reference_image $path_to_images/warp.xform
         if [ $? -ne 0 ]; then
             echo "Error: Reformat failed for $imageBaseName"
             exit 1
@@ -102,7 +102,7 @@ find "$path_to_tifs" -maxdepth 1 -type f -name "*.tif" | while read -r file; do
     # reformat jacobian
     jacobian_basename=jacobian_${imageBaseName}.nrrd
     if [ ! -f "$path_to_images/$jacobian_basename" ]; then
-        cmtk reformatx -v -o $path_to_images/$jacobian_basename $path_to_images/$warped_basename --jacobian --inverse $path_to_images/warp.xform
+        cmtk reformatx -v -o $path_to_images/$jacobian_basename $path_to_images/$warped_basename --jacobian $path_to_images/warp.xform
         if [ $? -ne 0 ]; then
             echo "Error: Jacobian reformat failed for $imageBaseName"
             exit 1

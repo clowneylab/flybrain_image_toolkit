@@ -48,3 +48,43 @@ This script produces two main types of output files inside a temporary folder fo
 - Use a clear neuropile channel (like nc82) as the reference for best results.
 - Monitor your job's progress with `squeue`.
 - The default time limit is set to 10 hours per job.
+
+## Apply Brain Mask to Original Image Space
+
+This script uses the generated registration to transform a standard brain mask back into the coordinate space of the original, un-registered image. This is useful for isolating the brain region in the raw data. It is designed to be run as a SLURM job array, processing one image per task.
+
+### Usage
+
+First, count the number of `.tif` files in your input directory, then submit the job array.
+
+```bash
+# Count the number of .tif files
+NUM_FILES=$(ls -1q <input_folder>/*.tif | wc -l)
+
+# Submit the job array
+sbatch --array=1-$NUM_FILES --job-name "<job_name>" --mail-user "<your_email>" GL_batch_mask_JRC2018U_array.sh <input_folder> <output_folder> <reference_channel>
+```
+
+### Parameters
+
+- `<input_folder>`: Folder containing the TIF files that were registered.
+- `<output_folder>`: Where the output mask files will be saved.
+- `<reference_channel>`: Channel number that was used for registration (1-based).
+
+### Example
+
+```bash
+# Count the files
+NUM_FILES=$(ls -1q ./data/raw_images/*.tif | wc -l)
+
+# Submit the job
+sbatch --array=1-$NUM_FILES --job-name "Masking" --mail-user "yourname@umich.edu" \
+  GL_batch_mask_JRC2018U_array.sh \
+  ./data/raw_images \
+  ./data/masked_output \
+  4
+```
+
+### Output
+
+- `Masked_*.nrrd`: The brain mask transformed into the space of the original input image, located in the temporary folder for each image.

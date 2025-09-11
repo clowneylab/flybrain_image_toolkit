@@ -14,4 +14,6 @@ A collection of tools to process Drosophila brain images. Each folder below cont
 
 - [VFB](VFB/download_nrrd.ipynb): Download registered nrrd images from virtual fly brain.
 
+- [greedy_set_cover](greedy_set_cover/Najia_awasaki_clusters.ipynb): A Jupyter notebook implementing a greedy set cover algorithm to find a minimal set of transcription factors for distinguishing cell clusters.
+
 Refer to each tool's README for usage instructions and details.
