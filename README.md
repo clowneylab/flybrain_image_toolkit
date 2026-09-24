@@ -12,6 +12,8 @@ A collection of tools to process Drosophila brain images. Each folder below cont
 
 - [CMTK_Jacobian](CMTK_Jacobian/README.md): Performs warp registration and calculates the Jacobian determinant field.
 
+- [CMTK_average](CMTK_average/README.md): Normalizes and averages registered images using CMTK.
+
 - [VFB](VFB/download_nrrd.ipynb): Download registered nrrd images from virtual fly brain.
 
 - [greedy_set_cover](greedy_set_cover/Najia_awasaki_clusters.ipynb): A Jupyter notebook implementing a greedy set cover algorithm to find a minimal set of transcription factors for distinguishing cell clusters.
